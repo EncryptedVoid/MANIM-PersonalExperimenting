@@ -1,4 +1,5 @@
 # compiler_pipeline_animation.py
+from manim import *
 from compiler_animation_phases import CompilerAnimationPhases
 
 
@@ -8,6 +9,12 @@ class CompilerPipelineAnimation(CompilerAnimationPhases):
         # Any final initializations
 
     def construct(self):
+        """
+        Main method that orchestrates the entire compiler pipeline animation.
+
+        This method serves as the entry point and coordinates the sequence
+        of animation phases to create a cohesive educational experience.
+        """
         # Set background color
         self.camera.background_color = "#111111"
 

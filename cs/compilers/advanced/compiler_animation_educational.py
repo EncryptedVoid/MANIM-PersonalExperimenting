@@ -1,14 +1,53 @@
 # compiler_animation_educational.py
+from manim import *
+import numpy as np
 from compiler_animation_base import CompilerAnimationBase
 
 
 class CompilerAnimationEducational(CompilerAnimationBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
         # Educational connections between phases
         self.phase_connections = {
-            ("preprocessor", "lexer"): "With preprocessed code ready...",
-            # ...other connections...
+            (
+                "preprocessor",
+                "lexer",
+            ): "With preprocessed code ready, we can now break it into meaningful tokens...",
+            (
+                "lexer",
+                "parser",
+            ): "These tokens serve as the building blocks for constructing the AST...",
+            (
+                "parser",
+                "ir",
+            ): "With a complete syntax tree, we can now translate to an architecture-independent form...",
+            (
+                "ir",
+                "optimizer",
+            ): "This intermediate representation allows for systematic optimizations...",
+            (
+                "optimizer",
+                "codegen",
+            ): "The optimized code now needs to be translated to target assembly...",
+            (
+                "codegen",
+                "assembler",
+            ): "Assembly code must be converted to binary machine instructions...",
+            (
+                "assembler",
+                "linker",
+            ): "Object files need to be combined with libraries to form a complete program...",
+        }
+
+        self.timing = {
+            "brief": 0.5,  # Quick transitions
+            "standard": 0.8,  # Standard animations
+            "emphasis": 1.2,  # Important concepts
+            "complex": 1.5,  # Complex transformations
+            "wait_brief": 0.3,  # Short pauses
+            "wait_std": 0.7,  # Standard pauses
+            "wait_long": 1.2,  # Longer cognitive processing
         }
 
     def focus_attention(

@@ -8,24 +8,62 @@ class CompilerAnimationBase(Scene):
         # Base properties: colors, regions, timing
         self.all_objects = {}
         self.current_phase = None
-        # Define color scheme
+
+        # For managing persistent objects that shouldn't be removed between phases
+        self.persistent_objects = set()
+
+        # Complete colors dictionary
         self.colors = {
             "title": WHITE,
             "main_phase": BLUE_D,
-            # ...other colors...
+            "sub_phase": BLUE_B,
+            "code": GREEN_B,
+            "highlight": YELLOW_D,
+            "arrow": GRAY_B,
+            "file": GOLD_B,
+            "error": RED_C,
+            "instruction": TEAL_B,
+            "memory": PURPLE_B,
+            "success": GREEN_D,
         }
-        # Define screen regions
+
+        # Complete regions dictionary
         self.regions = {
             "top": UP * 3.5,
             "title": UP * 3,
-            # ...other regions...
+            "upper": UP * 2,
+            "middle": UP * 0,
+            "lower": DOWN * 2,
+            "bottom": DOWN * 3,
         }
-        # Define timing framework
-        self.timing = {
-            "brief": 0.5,
-            "standard": 0.8,
-            # ...other timings...
-        }
+
+    def get_safe_position(
+        self, new_object, desired_position, existing_objects=None, min_buffer=0.5
+    ):
+        """Find a safe position that doesn't overlap with existing objects"""
+        if existing_objects is None:
+            existing_objects = list(self.all_objects.values())
+
+        # Start with the desired position
+        safe_position = np.array(desired_position)
+
+        # Check for overlaps
+        for obj in existing_objects:
+            if (
+                obj.get_center()[1] - obj.height / 2
+                <= safe_position[1] + new_object.height / 2
+                and obj.get_center()[1] + obj.height / 2
+                >= safe_position[1] - new_object.height / 2
+                and obj.get_center()[0] - obj.width / 2
+                <= safe_position[0] + new_object.width / 2
+                and obj.get_center()[0] + obj.width / 2
+                >= safe_position[0] - new_object.width / 2
+            ):
+
+                # There's an overlap - adjust position (e.g., move down)
+                safe_position += DOWN * (obj.height + min_buffer)
+
+        return safe_position
 
     def create_element(
         self, element_type, content, size=24, position=ORIGIN, color=None, **kwargs
@@ -44,14 +82,26 @@ class CompilerAnimationBase(Scene):
             elif element_type == "text":
                 obj = Text(content, font_size=size, color=color)
             elif element_type == "code":
+                # In Manim CE v0.19.0, Code uses tex_to_color_map instead of direct font_size
+                code_kwargs = kwargs.copy()
+                if "font_size" in code_kwargs:
+                    scale_factor = (
+                        code_kwargs.pop("font_size") / 24
+                    )  # Normalizing to default size
+                else:
+                    scale_factor = size / 24
+
                 obj = Code(
-                    code=content,
+                    content,
                     language="cpp",
-                    font_size=size,
                     background="window",
                     background_stroke_width=1,
-                    **kwargs,
+                    **code_kwargs,
                 )
+
+                # Apply scaling after creation if needed
+                if scale_factor != 1:
+                    obj.scale(scale_factor)
             elif element_type == "math":
                 obj = MathTex(content, font_size=size, color=color)
             elif element_type == "file":
@@ -119,7 +169,8 @@ class CompilerAnimationBase(Scene):
         # Determine which objects to fade out
         to_fade = []
         for obj_id, obj in list(self.all_objects.items()):
-            if obj_id not in keep_ids:
+            # Only keep objects explicitly mentioned AND that are still visible on screen
+            if obj_id not in keep_ids and obj_id not in self.persistent_objects:
                 to_fade.append(obj)
                 del self.all_objects[obj_id]
 
@@ -214,4 +265,13 @@ class CompilerAnimationBase(Scene):
         for obj_id in to_remove:
             del self.all_objects[obj_id]
 
-    # Other core utility methods...
+    def dynamic_timing(self, complexity, base_time=0.8, factor=0.5):
+        """Dynamically adjust timing based on visual complexity"""
+        # Count visible objects as a measure of complexity
+        if complexity == "simple":
+            return base_time
+        elif complexity == "medium":
+            return base_time * (1 + factor * 0.5)
+        elif complexity == "complex":
+            return base_time * (1 + factor)
+        return base_time
